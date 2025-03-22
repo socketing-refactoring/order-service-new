@@ -55,7 +55,7 @@
             <appender-ref ref="JDBC_LOG"/>
         </logger>
 
-        <logger name="com.jeein.member.LoggingFilter" level="INFO" additivity="false">
+        <logger name="com.jeein.order.LoggingFilter" level="INFO" additivity="false">
             <appender-ref ref="API_LOG" />
         </logger>
 
@@ -78,11 +78,11 @@
             <appender-ref ref="CONSOLE"/>
         </logger>
 
-        <logger name="com.jeein.member.LoggingFilter" level="INFO" additivity="false">
+        <logger name="com.jeein.order.LoggingFilter" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE" />
         </logger>
 
-        <logger name="com.jeein.member" level="DEBUG" additivity="false">
+        <logger name="com.jeein.order" level="DEBUG" additivity="false">
             <appender-ref ref="CONSOLE" />
         </logger>
 
