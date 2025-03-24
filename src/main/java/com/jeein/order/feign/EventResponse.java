@@ -16,6 +16,7 @@ public class EventResponse {
     private String description;
     private String place;
     private String artist;
+    private String thumbnail;
     private List<EventDatetimeResponse> eventDatetimes;
     private Instant eventOpenTime;
     private Instant ticketingOpenTime;

@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 public class OrderRequest {
     private String memberId;
-    private String eventId;
+    // private String eventId;
     //    private String eventTitle;
     private String eventDatetimeId;
     //    private String eventDatetime;

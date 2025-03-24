@@ -32,6 +32,10 @@ public interface OrderRepository extends JpaRepository<Orders, UUID> {
     void softDeleteOrder(UUID orderId, Instant deletedAt);
 
     @Modifying
+    @Query("UPDATE Reservation r SET r.deletedAt = :deletedAt WHERE r.order.id = :orderId")
+    void softDeleteReservations(UUID orderId, Instant deletedAt);
+
+    @Modifying
     @Query("UPDATE Orders o SET o.canceledAt = :canceledAt WHERE o.id = :orderId")
     void cancelOrder(UUID orderId, Instant canceledAt);
 }

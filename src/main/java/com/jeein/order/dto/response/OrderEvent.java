@@ -13,6 +13,7 @@ public class OrderEvent {
     private String description;
     private String place;
     private String artist;
+    private String thumbnail;
 
     public static OrderEvent convertEventResponseToOrderEvent(EventResponse event) {
         return OrderEvent.builder()
@@ -21,6 +22,7 @@ public class OrderEvent {
                 .description(event.getDescription())
                 .place(event.getPlace())
                 .artist(event.getArtist())
+                .thumbnail(event.getThumbnail())
                 .build();
     }
 }

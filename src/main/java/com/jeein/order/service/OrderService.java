@@ -2,10 +2,7 @@ package com.jeein.order.service;
 
 import com.jeein.order.dto.CommonResponse;
 import com.jeein.order.dto.request.OrderRequest;
-import com.jeein.order.dto.response.FlatReservationResponse;
-import com.jeein.order.dto.response.OrderDetailResponse;
-import com.jeein.order.dto.response.OrderEvent;
-import com.jeein.order.dto.response.ReservationDetail;
+import com.jeein.order.dto.response.*;
 import com.jeein.order.entity.Orders;
 import com.jeein.order.entity.Payment;
 import com.jeein.order.entity.Reservation;
@@ -51,8 +48,10 @@ public class OrderService {
         // 주문 확인용 응답 객체 생성
         List<OrderDetailResponse> response = new ArrayList<>();
         for (Orders order : orders) {
+            UUID eventDatetimeId = order.getReservations().getFirst().getEventDatetimeId();
             ResponseEntity<CommonResponse<EventResponse>> eventResponse =
-                    eventServiceFeignClient.getOneEventDetails(order.getEventId().toString());
+                    eventServiceFeignClient.getOneEventDetailsByEventDatetimeId(
+                            eventDatetimeId.toString());
             if (eventResponse.getStatusCode().isError()) {
                 throw new FeignServiceException(ErrorCode.EVENT_FEIGN_ERROR);
             }
@@ -70,9 +69,7 @@ public class OrderService {
                                     .filter(
                                             datetime ->
                                                     datetime.getId()
-                                                            .equals(
-                                                                    order.getEventDatetimeId()
-                                                                            .toString()))
+                                                            .equals(eventDatetimeId.toString()))
                                     .map(EventResponse.EventDatetimeResponse::getDatetime)
                                     .findFirst()
                                     .orElseThrow(
@@ -81,7 +78,7 @@ public class OrderService {
                                                             ErrorCode.EVENT_DATETIME_NOT_FOUND)));
             ;
 
-            List<ReservationDetail> reservationDetailList = new ArrayList<>();
+            List<ReservationDetailResponse> reservationDetailList = new ArrayList<>();
             for (Reservation reservation : order.getReservations()) {
                 event.getAreas().stream()
                         .flatMap(
@@ -95,7 +92,7 @@ public class OrderService {
                                                                         .contains(seat.getId()))
                                                 .map(
                                                         seat ->
-                                                                ReservationDetail.builder()
+                                                                ReservationDetailResponse.builder()
                                                                         .id(
                                                                                 reservation
                                                                                         .getId()
@@ -110,9 +107,15 @@ public class OrderService {
                                                                         .build()))
                         .forEach(reservationDetailList::add);
             }
+
             OrderDetailResponse orderDetail =
-                    OrderDetailResponse.fromEntity(
-                            order, eventDatetime.get(), orderEvent, member, reservationDetailList);
+                    OrderDetailResponse.of(
+                            order,
+                            eventDatetimeId.toString(),
+                            eventDatetime.get(),
+                            orderEvent,
+                            member,
+                            reservationDetailList);
             response.add(orderDetail);
         }
 
@@ -138,10 +141,13 @@ public class OrderService {
             log.error(memberResponse.getBody().getMessage());
             throw new MemberException(ErrorCode.MEMBER_NOT_FOUND);
         }
+
         // 주문 확인용 응답 객체 생성
-        log.info("event id: {}", order.getEventId().toString());
+        UUID eventDatetimeId = order.getReservations().getFirst().getEventDatetimeId();
+        log.info("event id: {}", eventDatetimeId.toString());
         ResponseEntity<CommonResponse<EventResponse>> eventResponse =
-                eventServiceFeignClient.getOneEventDetails(order.getEventId().toString());
+                eventServiceFeignClient.getOneEventDetailsByEventDatetimeId(
+                        eventDatetimeId.toString());
         if (eventResponse.getStatusCode().isError()) {
             throw new FeignServiceException(ErrorCode.EVENT_FEIGN_ERROR);
         }
@@ -158,10 +164,7 @@ public class OrderService {
                         event.getEventDatetimes().stream()
                                 .filter(
                                         datetime ->
-                                                datetime.getId()
-                                                        .equals(
-                                                                order.getEventDatetimeId()
-                                                                        .toString()))
+                                                datetime.getId().equals(eventDatetimeId.toString()))
                                 .map(EventResponse.EventDatetimeResponse::getDatetime)
                                 .findFirst()
                                 .orElseThrow(
@@ -170,7 +173,7 @@ public class OrderService {
                                                         ErrorCode.EVENT_DATETIME_NOT_FOUND)));
         ;
 
-        List<ReservationDetail> reservationDetailList = new ArrayList<>();
+        List<ReservationDetailResponse> reservationDetailList = new ArrayList<>();
         for (Reservation reservation : order.getReservations()) {
             event.getAreas().stream()
                     .flatMap(
@@ -184,7 +187,7 @@ public class OrderService {
                                                                     .contains(seat.getId()))
                                             .map(
                                                     seat ->
-                                                            ReservationDetail.builder()
+                                                            ReservationDetailResponse.builder()
                                                                     .id(
                                                                             reservation
                                                                                     .getId()
@@ -198,16 +201,22 @@ public class OrderService {
                                                                     .build()))
                     .forEach(reservationDetailList::add);
         }
+
         OrderDetailResponse orderDetail =
-                OrderDetailResponse.fromEntity(
-                        order, eventDatetime.get(), orderEvent, member, reservationDetailList);
+                OrderDetailResponse.of(
+                        order,
+                        eventDatetimeId.toString(),
+                        eventDatetime.get(),
+                        orderEvent,
+                        member,
+                        reservationDetailList);
 
         return CommonResponse.success("전체 주문 조회 성공", "0", orderDetail);
     }
 
     @Transactional(readOnly = true)
     public CommonResponse<List<FlatReservationResponse>> getReservationDetailListByEvent(
-            String eventId, String eventDatetimeId) {
+            String eventDatetimeId) {
         List<Orders> orderList =
                 orderRepository.findByEventDatetimeIdWHERENOTCANCELED(
                         UUID.fromString(eventDatetimeId));
@@ -242,7 +251,7 @@ public class OrderService {
                             UUID.fromString(seatId));
             existingOrderList.addAll(existingOrder);
         }
-        if (existingOrderList.size() > 0) {
+        if (!existingOrderList.isEmpty()) {
             throw new OrderException(ErrorCode.ORDER_ALREADY_EXISTS);
         }
 
@@ -261,10 +270,15 @@ public class OrderService {
         }
 
         // order, reservation, payment 저장
-        Orders order = Orders.toEntity(orderRequest, member);
+        Orders order = Orders.toEntity(member);
         order.addReservations(
                 orderRequest.getSeatIds().stream()
-                        .map(seatId -> new Reservation(UUID.fromString(seatId), order))
+                        .map(
+                                seatId ->
+                                        new Reservation(
+                                                UUID.fromString(seatId),
+                                                UUID.fromString(orderRequest.getEventDatetimeId()),
+                                                order))
                         .toList());
         order.addPayments(
                 orderRequest.getPayments().stream()
@@ -274,7 +288,8 @@ public class OrderService {
 
         // 주문 확인용 응답 객체 생성
         ResponseEntity<CommonResponse<EventResponse>> eventResponse =
-                eventServiceFeignClient.getOneEventDetails(orderRequest.getEventId());
+                eventServiceFeignClient.getOneEventDetailsByEventDatetimeId(
+                        orderRequest.getEventDatetimeId());
         if (eventResponse.getStatusCode().isError()) {
             throw new FeignServiceException(ErrorCode.EVENT_FEIGN_ERROR);
         }
@@ -294,6 +309,8 @@ public class OrderService {
                                                 datetime.getId()
                                                         .equals(
                                                                 savedOrder
+                                                                        .getReservations()
+                                                                        .getFirst()
                                                                         .getEventDatetimeId()
                                                                         .toString()))
                                 .map(EventResponse.EventDatetimeResponse::getDatetime)
@@ -304,7 +321,7 @@ public class OrderService {
                                                         ErrorCode.EVENT_DATETIME_NOT_FOUND)));
         ;
 
-        List<ReservationDetail> reservationDetailList = new ArrayList<>();
+        List<ReservationDetailResponse> reservationDetailList = new ArrayList<>();
         for (Reservation reservation : savedOrder.getReservations()) {
             event.getAreas().stream()
                     .flatMap(
@@ -318,7 +335,7 @@ public class OrderService {
                                                                     .contains(seat.getId()))
                                             .map(
                                                     seat ->
-                                                            ReservationDetail.builder()
+                                                            ReservationDetailResponse.builder()
                                                                     .id(
                                                                             reservation
                                                                                     .getId()
@@ -334,8 +351,13 @@ public class OrderService {
         }
 
         OrderDetailResponse response =
-                OrderDetailResponse.fromEntity(
-                        savedOrder, eventDatetime.get(), orderEvent, member, reservationDetailList);
+                OrderDetailResponse.of(
+                        savedOrder,
+                        orderRequest.getEventDatetimeId(),
+                        eventDatetime.get(),
+                        orderEvent,
+                        member,
+                        reservationDetailList);
         return CommonResponse.success("주문 생성 성공", "0", response);
     }
 
@@ -364,12 +386,9 @@ public class OrderService {
                         .findById(UUID.fromString(orderId))
                         .orElseThrow(() -> new OrderException(ErrorCode.ORDER_NOT_FOUND));
 
-        //        if (order.getDeletedAt() != null) {
-        //            throw new OrderException(ErrorCode.ORDER_ALREADY_DELETED);
-        //        }
-
-        orderRepository.softDeleteOrder(UUID.fromString(orderId), Instant.now());
-
+        Instant now = Instant.now();
+        orderRepository.softDeleteOrder(UUID.fromString(orderId), now);
+        orderRepository.softDeleteReservations(UUID.fromString(orderId), now);
         return CommonResponse.success("주문 삭제 성공", "0", null);
     }
 }

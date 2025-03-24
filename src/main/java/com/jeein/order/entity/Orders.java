@@ -1,6 +1,5 @@
 package com.jeein.order.entity;
 
-import com.jeein.order.dto.request.OrderRequest;
 import com.jeein.order.feign.MemberResponse;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -24,11 +23,6 @@ public class Orders extends DeletableEntity {
     @Column(nullable = false)
     private String memberEmail;
 
-    @Column() private UUID eventId;
-
-    @Column(nullable = false)
-    private UUID eventDatetimeId;
-
     @Column() private Instant canceledAt;
 
     @ToString.Exclude
@@ -47,13 +41,11 @@ public class Orders extends DeletableEntity {
             orphanRemoval = true)
     private List<Reservation> reservations;
 
-    public static Orders toEntity(OrderRequest orderRequest, MemberResponse member) {
+    public static Orders toEntity(MemberResponse member) {
         return Orders.builder()
                 .memberId(UUID.fromString(member.getId()))
                 .memberName(member.getName())
                 .memberEmail(member.getEmail())
-                .eventId(UUID.fromString(orderRequest.getEventId()))
-                .eventDatetimeId(UUID.fromString(orderRequest.getEventDatetimeId()))
                 .build();
     }
 

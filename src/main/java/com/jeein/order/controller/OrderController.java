@@ -16,12 +16,21 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
     private final OrderService orderService;
 
-    @GetMapping
-    public ResponseEntity<CommonResponse<List<OrderDetailResponse>>> getOrderList(
+    /* 주문 목록 상세 조회 (공연, 예매자 정보 포함) */
+    @GetMapping("/detail")
+    public ResponseEntity<CommonResponse<List<OrderDetailResponse>>> getDetailedOrderList(
             @RequestParam String memberId) {
         return ResponseEntity.ok(orderService.getOrderDetailList(memberId));
     }
 
+    /* 예약 목록 조회 (공연 정보 미포함, 예매자 정보 포함) */
+    @GetMapping("/reservers")
+    public ResponseEntity<CommonResponse<List<FlatReservationResponse>>>
+            getReservationDetailListByEvent(@RequestParam String eventDatetimeId) {
+        return ResponseEntity.ok(orderService.getReservationDetailListByEvent(eventDatetimeId));
+    }
+
+    /* 단일 주문 상세 조회 */
     @GetMapping("/{orderId}")
     public ResponseEntity<CommonResponse<OrderDetailResponse>> getOreOrderDetail(
             @PathVariable String orderId) {
@@ -36,14 +45,6 @@ public class OrderController {
     @DeleteMapping("/{orderId}")
     public ResponseEntity<CommonResponse<Object>> softDeleteOrder(@PathVariable String orderId) {
         return ResponseEntity.ok(orderService.softDeleteOrder(orderId));
-    }
-
-    @GetMapping("/reservations")
-    public ResponseEntity<CommonResponse<List<FlatReservationResponse>>>
-            getReservationDetailListByEvent(
-                    @RequestParam String eventId, @RequestParam String eventDatetimeId) {
-        return ResponseEntity.ok(
-                orderService.getReservationDetailListByEvent(eventId, eventDatetimeId));
     }
 
     @PostMapping

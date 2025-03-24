@@ -6,7 +6,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class ReservationDetail {
+public class ReservationDetailResponse {
     private String id;
     private String seatId;
     private int seatRow;
