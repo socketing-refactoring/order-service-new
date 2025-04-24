@@ -1,6 +1,6 @@
 package com.jeein.order.dto.response;
 
-import com.jeein.order.feign.EventResponse;
+import com.jeein.order.dto.feign.EventResponse;
 import lombok.*;
 
 @Getter

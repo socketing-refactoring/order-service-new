@@ -1,18 +1,27 @@
 package com.jeein.order.controller;
 
 import com.jeein.order.dto.CommonResponse;
+import com.jeein.order.dto.feign.MemberResponse;
 import com.jeein.order.dto.request.OrderRequest;
 import com.jeein.order.dto.response.FlatReservationResponse;
 import com.jeein.order.dto.response.OrderDetailResponse;
+import com.jeein.order.exception.CustomValidationException;
+import com.jeein.order.exception.ErrorCode;
 import com.jeein.order.service.OrderService;
 import java.util.List;
+import java.util.Optional;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
+@Slf4j
 public class OrderController {
     private final OrderService orderService;
 
@@ -26,7 +35,8 @@ public class OrderController {
     /* 예약 목록 조회 (공연 정보 미포함, 예매자 정보 포함) */
     @GetMapping("/reservers")
     public ResponseEntity<CommonResponse<List<FlatReservationResponse>>>
-            getReservationDetailListByEvent(@RequestParam String eventDatetimeId) {
+            getReservationDetailListByEvent(
+                    @RequestParam(required = false) String eventDatetimeId) {
         return ResponseEntity.ok(orderService.getReservationDetailListByEvent(eventDatetimeId));
     }
 
@@ -37,19 +47,50 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOneOrderDetail(orderId));
     }
 
+    /* 주문 취소 */
     @PostMapping("/{orderId}/status")
     public ResponseEntity<CommonResponse<Object>> cancelOrder(@PathVariable String orderId) {
         return ResponseEntity.ok(orderService.cancelOrder(orderId));
     }
 
+    /* 단일 주문 소프트 삭제 (reservation 테이블도 소프트 삭제) */
     @DeleteMapping("/{orderId}")
     public ResponseEntity<CommonResponse<Object>> softDeleteOrder(@PathVariable String orderId) {
         return ResponseEntity.ok(orderService.softDeleteOrder(orderId));
     }
 
+    /* 주문 생성 */
     @PostMapping
     public ResponseEntity<CommonResponse<OrderDetailResponse>> createOrder(
-            @RequestBody OrderRequest orderRequest) {
-        return ResponseEntity.ok(orderService.createOrder(orderRequest));
+            @Valid @RequestBody OrderRequest orderRequest, HttpServletRequest request) {
+        // x-api-로 시작하는 모든 헤더 로깅
+        request.getHeaderNames().asIterator()
+                .forEachRemaining(headerName -> {
+                    if (headerName.toLowerCase().startsWith("x-api-")) {
+                        log.info("Custom Header: {} = {}", headerName, request.getHeader(headerName));
+                    }
+                });
+
+        // Gateway Server의 JWTAuthenticationFilter에서 헤더에 추가한 회원 정보 추출
+        String memberId = Optional.ofNullable(request.getHeader("x-api-userid"))
+                .filter(header -> !header.isEmpty())
+                .orElseThrow(() -> new CustomValidationException(ErrorCode.INVALID_TOKEN));
+
+//        String memberName = Optional.ofNullable(request.getHeader("x-api-username"))
+//                .filter(value -> !value.isEmpty())
+//                .orElseThrow(() -> new CustomValidationException(ErrorCode.INVALID_TOKEN));
+//
+//        String memberNickname = Optional.ofNullable(request.getHeader("x-api-usernickname"))
+//                .filter(value -> !value.isEmpty())
+//                .orElseThrow(() -> new CustomValidationException(ErrorCode.INVALID_TOKEN));
+//
+//        String memberEmail = Optional.ofNullable(request.getHeader("x-api-useremail"))
+//                .filter(value -> !value.isEmpty())
+//                .orElseThrow(() -> new CustomValidationException(ErrorCode.INVALID_TOKEN));
+
+        MemberResponse member =
+                MemberResponse.of(memberId, "이름", "이메일", "닉네임");
+
+        return ResponseEntity.ok(orderService.createOrder(orderRequest, member));
     }
 }

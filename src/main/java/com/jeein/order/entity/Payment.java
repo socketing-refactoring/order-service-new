@@ -1,8 +1,6 @@
 package com.jeein.order.entity;
 
-import com.jeein.order.dto.request.PaymentRequest;
-import com.jeein.order.enums.TossPaymentMethod;
-import com.jeein.order.enums.TossPaymentStatus;
+import com.jeein.order.dto.feign.TossPaymentResponse;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.*;
@@ -16,37 +14,32 @@ import lombok.*;
 public class Payment extends BaseEntity {
     @ManyToOne @ToString.Exclude private Orders order;
 
-    @Column(nullable = false, unique = true)
-    String tossPaymentKey;
-
-    @Column(nullable = false)
-    String tossOrderId;
-
     @Column(nullable = false)
     long totalAmount;
 
-    @Enumerated(value = EnumType.STRING)
-    @Column(nullable = false)
-    TossPaymentMethod tossPaymentMethod;
+    @Column String tossOrderId;
 
-    @Enumerated(value = EnumType.STRING)
-    @Column(nullable = false)
-    TossPaymentStatus tossPaymentStatus;
+    @Column String tossPaymentKey;
+
+    @Column String tossPaymentMethod;
+
+    @Column String tossPaymentStatus;
 
     @Column(nullable = false)
     Instant requestedAt;
 
-    Instant approvedAt;
+    @Column Instant approvedAt;
 
-    public static Payment toEntity(PaymentRequest paymentRequest, Orders order) {
+    public static Payment toEntity(TossPaymentResponse paymentResponse, Orders order) {
         return Payment.builder()
-                .tossPaymentKey(paymentRequest.getTossPaymentKey())
-                .tossOrderId(paymentRequest.getTossOrderId())
-                .totalAmount(paymentRequest.getTotalAmount())
-                .tossPaymentMethod(paymentRequest.getTossPaymentMethod())
-                .tossPaymentStatus(paymentRequest.getTossPaymentStatus())
-                .requestedAt(paymentRequest.getRequestedAt())
-                .approvedAt(paymentRequest.getApprovedAt())
+                .order(order)
+                .tossPaymentKey(paymentResponse.getPaymentKey())
+                .tossOrderId(paymentResponse.getOrderId())
+                .totalAmount(paymentResponse.getAmount())
+                .tossPaymentMethod(paymentResponse.getMethod())
+                .tossPaymentStatus(paymentResponse.getStatus())
+                .requestedAt(Instant.parse(paymentResponse.getRequestedAt()))
+                .approvedAt(Instant.parse(paymentResponse.getApprovedAt()))
                 .build();
     }
 }

@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
     protected ResponseEntity<CommonResponse<Object>> handleCustomValidationException(
             CustomValidationException e) {
         CommonResponse<Object> response =
-                CommonResponse.error(ErrorCode.INVALID_REQUEST_VALUE, e.getBindingResult());
+                CommonResponse.error(ErrorCode.INVALID_REQUEST_VALUE);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -118,4 +118,6 @@ public class GlobalExceptionHandler {
         CommonResponse<Object> response = CommonResponse.error(ErrorCode.INTERNAL_SERVER_ERROR);
         return new ResponseEntity<>(response, ErrorCode.INTERNAL_SERVER_ERROR.getStatus());
     }
+
+
 }

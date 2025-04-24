@@ -1,4 +1,4 @@
-package com.jeein.order.feign;
+package com.jeein.order.dto.feign;
 
 import java.util.List;
 import lombok.*;

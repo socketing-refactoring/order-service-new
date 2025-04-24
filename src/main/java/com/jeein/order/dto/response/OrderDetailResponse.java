@@ -1,7 +1,7 @@
 package com.jeein.order.dto.response;
 
+import com.jeein.order.dto.feign.MemberResponse;
 import com.jeein.order.entity.Orders;
-import com.jeein.order.feign.MemberResponse;
 import java.time.Instant;
 import java.util.List;
 import lombok.*;
@@ -25,7 +25,7 @@ public class OrderDetailResponse {
 
     public static OrderDetailResponse of(
             Orders order,
-            String eventDatetimeId, // or UUID
+            String eventDatetimeId,
             Instant eventDatetime,
             OrderEvent orderEvent,
             MemberResponse orderMember,

@@ -1,4 +1,4 @@
-package com.jeein.order.feign;
+package com.jeein.order.dto.feign;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
@@ -9,7 +9,6 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class EventResponse {
     private String id;
     private String title;

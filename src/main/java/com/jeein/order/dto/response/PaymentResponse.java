@@ -13,8 +13,8 @@ import lombok.*;
 public class PaymentResponse {
     private String id;
     private long totalAmount;
-    private TossPaymentMethod tossPaymentMethod;
-    private TossPaymentStatus tossPaymentStatus;
+    private String tossPaymentMethod;
+    private String tossPaymentStatus;
     private Instant requestedAt;
     private Instant approvedAt;
 

@@ -13,7 +13,12 @@ import lombok.*;
         uniqueConstraints =
                 @UniqueConstraint(columnNames = {"event_datetime_id", "seat_id", "deleted_at"}))
 public class Reservation extends DeletableEntity {
-    @Column private UUID seatId;
+
+    @Column
+    private String seatInfo;
+
+    @Column(nullable = false)
+    private UUID seatId;
 
     @Column(nullable = false)
     private UUID eventDatetimeId;

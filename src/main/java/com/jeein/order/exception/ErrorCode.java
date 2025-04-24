@@ -13,6 +13,8 @@ public enum ErrorCode {
     MULTIPART_NO_BOUNDARY(HttpStatus.BAD_REQUEST, "C_006", "요청 헤더의 content type을 확인해 주세요."),
     INVALID_MULTIPARTFILE(HttpStatus.BAD_REQUEST, "C_007", "요청 데이터의 이미지가 유효하지 않습니다"),
 
+    INVALID_TOKEN(HttpStatus.FORBIDDEN, "A_002", "접근이 허용되지 않은 사용자입니다"),
+
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "M_001", "회원 정보를 찾을 수 없습니다."),
 
     EVENT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "E_001", "공연 제목이 이미 존재합니다."),
@@ -24,6 +26,9 @@ public enum ErrorCode {
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "O_002", "공연 정보를 찾을 수 없습니다."),
     ORDER_ALREADY_DELETED(HttpStatus.CONFLICT, "O_003", "이미 삭제된 주문입니다."),
     ORDER_ALREADY_CANCELED(HttpStatus.CONFLICT, "O_004", "이미 취소된 주문입니다."),
+
+    TOSSPAYMENT_FEIGN_ERROR(
+            HttpStatus.INTERNAL_SERVER_ERROR, "TP_001", "토스 페이먼츠 결제 과정에서 오류가 발생햇습니다."),
 
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S_001", "서버에 오류가 발생했습니다."),
     UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S_002", "파일 업로드에 실패했습니다."),

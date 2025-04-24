@@ -1,6 +1,7 @@
 package com.jeein.order.entity;
 
-import com.jeein.order.feign.MemberResponse;
+import com.jeein.order.dto.feign.EventResponse;
+import com.jeein.order.dto.feign.MemberResponse;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.List;
@@ -14,6 +15,15 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @ToString(callSuper = true)
 public class Orders extends DeletableEntity {
+    @Column
+    private UUID eventId;
+
+    @Column
+    private String eventTitle;
+
+    @Column
+    private String eventThumbnail;
+
     @Column(nullable = false)
     private UUID memberId;
 
@@ -41,8 +51,11 @@ public class Orders extends DeletableEntity {
             orphanRemoval = true)
     private List<Reservation> reservations;
 
-    public static Orders toEntity(MemberResponse member) {
+    public static Orders toEntity(MemberResponse member, EventResponse event) {
         return Orders.builder()
+                .eventId(UUID.fromString(event.getId()))
+                .eventTitle(event.getTitle())
+                .eventThumbnail(event.getThumbnail())
                 .memberId(UUID.fromString(member.getId()))
                 .memberName(member.getName())
                 .memberEmail(member.getEmail())

@@ -20,11 +20,14 @@ public interface OrderRepository extends JpaRepository<Orders, UUID> {
     Optional<Orders> findById(UUID orderId);
 
     @Query(
-            "SELECT o FROM Orders o WHERE o.eventDatetimeId = :eventDatetimeId AND o.canceledAt IS NULL AND o.deletedAt IS NULL")
-    List<Orders> findByEventDatetimeIdWHERENOTCANCELED(UUID eventDatetimeId);
+            "SELECT o FROM Orders o JOIN o.reservations r "
+                    + "WHERE r.eventDatetimeId = :eventDatetimeId "
+                    + "AND o.canceledAt IS NULL "
+                    + "AND o.deletedAt IS NULL")
+    List<Orders> findByEventDatetimeIdWhereNotCanceled(UUID eventDatetimeId);
 
     @Query(
-            "SELECT o FROM Orders o JOIN o.reservations r WHERE o.eventDatetimeId = :eventDatetimeId AND r.seatId = :seatId")
+            "SELECT o FROM Orders o JOIN o.reservations r WHERE r.eventDatetimeId = :eventDatetimeId AND r.seatId = :seatId")
     List<Orders> findByEventDatetimeIdAndSeatId(UUID eventDatetimeId, UUID seatId);
 
     @Modifying
