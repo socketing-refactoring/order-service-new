@@ -1,18 +1,16 @@
 package com.jeein.order.controller;
 
 import com.jeein.order.dto.CommonResponse;
-import com.jeein.order.dto.feign.MemberResponse;
 import com.jeein.order.dto.request.OrderRequest;
 import com.jeein.order.dto.response.FlatReservationResponse;
 import com.jeein.order.dto.response.OrderDetailResponse;
 import com.jeein.order.exception.CustomValidationException;
 import com.jeein.order.exception.ErrorCode;
 import com.jeein.order.service.OrderService;
-import java.util.List;
-import java.util.Optional;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +46,7 @@ public class OrderController {
     }
 
     /* 주문 취소 */
-    @PostMapping("/{orderId}/status")
+    @PostMapping("/{orderId}/cancel")
     public ResponseEntity<CommonResponse<Object>> cancelOrder(@PathVariable String orderId) {
         return ResponseEntity.ok(orderService.cancelOrder(orderId));
     }
@@ -64,33 +62,24 @@ public class OrderController {
     public ResponseEntity<CommonResponse<OrderDetailResponse>> createOrder(
             @Valid @RequestBody OrderRequest orderRequest, HttpServletRequest request) {
         // x-api-로 시작하는 모든 헤더 로깅
-        request.getHeaderNames().asIterator()
-                .forEachRemaining(headerName -> {
-                    if (headerName.toLowerCase().startsWith("x-api-")) {
-                        log.info("Custom Header: {} = {}", headerName, request.getHeader(headerName));
-                    }
-                });
+        request.getHeaderNames()
+                .asIterator()
+                .forEachRemaining(
+                        headerName -> {
+                            if (headerName.toLowerCase().startsWith("x-api-")) {
+                                log.info(
+                                        "Custom Header: {} = {}",
+                                        headerName,
+                                        request.getHeader(headerName));
+                            }
+                        });
 
         // Gateway Server의 JWTAuthenticationFilter에서 헤더에 추가한 회원 정보 추출
-        String memberId = Optional.ofNullable(request.getHeader("x-api-userid"))
-                .filter(header -> !header.isEmpty())
-                .orElseThrow(() -> new CustomValidationException(ErrorCode.INVALID_TOKEN));
+        String memberId =
+                Optional.ofNullable(request.getHeader("x-api-userid"))
+                        .filter(header -> !header.isEmpty())
+                        .orElseThrow(() -> new CustomValidationException(ErrorCode.INVALID_TOKEN));
 
-//        String memberName = Optional.ofNullable(request.getHeader("x-api-username"))
-//                .filter(value -> !value.isEmpty())
-//                .orElseThrow(() -> new CustomValidationException(ErrorCode.INVALID_TOKEN));
-//
-//        String memberNickname = Optional.ofNullable(request.getHeader("x-api-usernickname"))
-//                .filter(value -> !value.isEmpty())
-//                .orElseThrow(() -> new CustomValidationException(ErrorCode.INVALID_TOKEN));
-//
-//        String memberEmail = Optional.ofNullable(request.getHeader("x-api-useremail"))
-//                .filter(value -> !value.isEmpty())
-//                .orElseThrow(() -> new CustomValidationException(ErrorCode.INVALID_TOKEN));
-
-        MemberResponse member =
-                MemberResponse.of(memberId, "이름", "이메일", "닉네임");
-
-        return ResponseEntity.ok(orderService.createOrder(orderRequest, member));
+        return ResponseEntity.ok(orderService.createOrder(orderRequest, memberId));
     }
 }

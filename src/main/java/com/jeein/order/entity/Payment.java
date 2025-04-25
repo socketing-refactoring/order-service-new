@@ -12,7 +12,10 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @ToString(callSuper = true)
 public class Payment extends BaseEntity {
-    @ManyToOne @ToString.Exclude private Orders order;
+    @ManyToOne
+    @ToString.Exclude
+    @JoinColumn(nullable = false)
+    private Orders order;
 
     @Column(nullable = false)
     long totalAmount;

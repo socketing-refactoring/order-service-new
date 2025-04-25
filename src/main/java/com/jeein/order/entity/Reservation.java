@@ -14,14 +14,20 @@ import lombok.*;
                 @UniqueConstraint(columnNames = {"event_datetime_id", "seat_id", "deleted_at"}))
 public class Reservation extends DeletableEntity {
 
-    @Column
-    private String seatInfo;
-
     @Column(nullable = false)
     private UUID seatId;
 
     @Column(nullable = false)
     private UUID eventDatetimeId;
 
-    @ToString.Exclude @ManyToOne private Orders order;
+    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(nullable = false)
+    private Orders order;
+
+    @Column private String areaLabel;
+
+    @Column private int seatRow;
+
+    @Column private int seatNumber;
 }

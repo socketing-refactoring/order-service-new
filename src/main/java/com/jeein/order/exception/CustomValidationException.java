@@ -1,7 +1,6 @@
 package com.jeein.order.exception;
 
 import lombok.Getter;
-import org.springframework.validation.BindingResult;
 
 @Getter
 public class CustomValidationException extends RuntimeException {

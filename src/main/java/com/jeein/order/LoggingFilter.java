@@ -51,7 +51,10 @@ public class LoggingFilter extends OncePerRequestFilter {
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            log.info("Request Header: {} = {}", headerName, Collections.list(request.getHeaders(headerName)));
+            log.info(
+                    "Request Header: {} = {}",
+                    headerName,
+                    Collections.list(request.getHeaders(headerName)));
         }
 
         // 요청 본문 로깅
@@ -67,9 +70,13 @@ public class LoggingFilter extends OncePerRequestFilter {
         log.info("Response Status: {}", response.getStatus());
 
         // 응답 헤더 로깅
-        response.getHeaderNames().forEach(headerName ->
-                log.info("Response Header: {} = {}", headerName, response.getHeaders(headerName))
-        );
+        response.getHeaderNames()
+                .forEach(
+                        headerName ->
+                                log.info(
+                                        "Response Header: {} = {}",
+                                        headerName,
+                                        response.getHeaders(headerName)));
 
         // 응답 본문 로깅
         byte[] responseBody = response.getContentAsByteArray();

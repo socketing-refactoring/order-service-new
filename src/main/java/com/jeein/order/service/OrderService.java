@@ -3,6 +3,7 @@ package com.jeein.order.service;
 import com.jeein.order.dto.CommonResponse;
 import com.jeein.order.dto.feign.EventResponse;
 import com.jeein.order.dto.feign.MemberResponse;
+import com.jeein.order.dto.feign.SeatAreaResponse;
 import com.jeein.order.dto.feign.TossPaymentRequest;
 import com.jeein.order.dto.feign.TossPaymentResponse;
 import com.jeein.order.dto.request.OrderRequest;
@@ -15,14 +16,12 @@ import com.jeein.order.feign.EventServiceFeignClient;
 import com.jeein.order.feign.MemberServiceFeignClient;
 import com.jeein.order.feign.TossPaymentFeignClient;
 import com.jeein.order.respository.OrderRepository;
+import feign.FeignException.FeignClientException;
 import java.time.Instant;
 import java.util.*;
-
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,8 +62,7 @@ public class OrderService {
             UUID eventDatetimeId = order.getReservations().getFirst().getEventDatetimeId();
 
             ResponseEntity<CommonResponse<EventResponse>> eventResponse =
-                    eventServiceFeignClient.getOneEvent(
-                            eventId.toString());
+                    eventServiceFeignClient.getOneEvent(eventId.toString());
             if (eventResponse.getStatusCode().isError()) {
                 throw new FeignServiceException(ErrorCode.EVENT_FEIGN_ERROR);
             }
@@ -90,36 +88,19 @@ public class OrderService {
                                                     new EventException(
                                                             ErrorCode.EVENT_DATETIME_NOT_FOUND)));
             ;
-//
-//            List<ReservationDetailResponse> reservationDetailList = new ArrayList<>();
-//            for (Reservation reservation : order.getReservations()) {
-//                event.getAreas().stream()
-//                        .flatMap(
-//                                area ->
-//                                        area.getSeats().stream()
-//                                                .filter(
-//                                                        seat ->
-//                                                                reservation
-//                                                                        .getSeatId()
-//                                                                        .toString()
-//                                                                        .contains(seat.getId()))
-//                                                .map(
-//                                                        seat ->
-//                                                                ReservationDetailResponse.builder()
-//                                                                        .id(
-//                                                                                reservation
-//                                                                                        .getId()
-//                                                                                        .toString())
-//                                                                        .seatId(seat.getId())
-//                                                                        .seatRow(seat.getRow())
-//                                                                        .seatNumber(
-//                                                                                seat.getNumber())
-//                                                                        .areaId(area.getId())
-//                                                                        .areaLabel(area.getLabel())
-//                                                                        .areaPrice(area.getPrice())
-//                                                                        .build()))
-//                        .forEach(reservationDetailList::add);
-//            }
+
+            List<ReservationDetailResponse> reservationDetailList =
+                    order.getReservations().stream()
+                            .map(
+                                    reservation ->
+                                            ReservationDetailResponse.builder()
+                                                    .id(reservation.getId().toString())
+                                                    .seatId(reservation.getSeatId().toString())
+                                                    .seatRow(reservation.getSeatRow())
+                                                    .seatNumber(reservation.getSeatNumber())
+                                                    .areaLabel(reservation.getAreaLabel())
+                                                    .build())
+                            .toList();
 
             OrderDetailResponse orderDetail =
                     OrderDetailResponse.of(
@@ -128,7 +109,7 @@ public class OrderService {
                             eventDatetime.get(),
                             orderEvent,
                             member,
-                            null);
+                            reservationDetailList);
             response.add(orderDetail);
         }
 
@@ -160,8 +141,7 @@ public class OrderService {
         UUID eventDatetimeId = order.getReservations().getFirst().getEventDatetimeId();
         log.info("event id: {}", eventDatetimeId.toString());
         ResponseEntity<CommonResponse<EventResponse>> eventResponse =
-                eventServiceFeignClient.getOneEventDetail(
-                        eventId.toString());
+                eventServiceFeignClient.getOneEventDetail(eventId.toString());
         if (eventResponse.getStatusCode().isError()) {
             throw new FeignServiceException(ErrorCode.EVENT_FEIGN_ERROR);
         }
@@ -187,34 +167,18 @@ public class OrderService {
                                                         ErrorCode.EVENT_DATETIME_NOT_FOUND)));
         ;
 
-        List<ReservationDetailResponse> reservationDetailList = new ArrayList<>();
-        for (Reservation reservation : order.getReservations()) {
-            event.getAreas().stream()
-                    .flatMap(
-                            area ->
-                                    area.getSeats().stream()
-                                            .filter(
-                                                    seat ->
-                                                            reservation
-                                                                    .getSeatId()
-                                                                    .toString()
-                                                                    .contains(seat.getId()))
-                                            .map(
-                                                    seat ->
-                                                            ReservationDetailResponse.builder()
-                                                                    .id(
-                                                                            reservation
-                                                                                    .getId()
-                                                                                    .toString())
-                                                                    .seatId(seat.getId())
-                                                                    .seatRow(seat.getRow())
-                                                                    .seatNumber(seat.getNumber())
-                                                                    .areaId(area.getId())
-                                                                    .areaLabel(area.getLabel())
-                                                                    .areaPrice(area.getPrice())
-                                                                    .build()))
-                    .forEach(reservationDetailList::add);
-        }
+        List<ReservationDetailResponse> reservationDetailList =
+                order.getReservations().stream()
+                        .map(
+                                reservation ->
+                                        ReservationDetailResponse.builder()
+                                                .id(reservation.getId().toString())
+                                                .seatId(reservation.getSeatId().toString())
+                                                .seatRow(reservation.getSeatRow())
+                                                .seatNumber(reservation.getSeatNumber())
+                                                .areaLabel(reservation.getAreaLabel())
+                                                .build())
+                        .toList();
 
         OrderDetailResponse orderDetail =
                 OrderDetailResponse.of(
@@ -263,27 +227,46 @@ public class OrderService {
 
     @Transactional
     public CommonResponse<OrderDetailResponse> createOrder(
-            OrderRequest orderRequest, MemberResponse member) {
-        // 공연 유효성 검사
-        ResponseEntity<CommonResponse<EventResponse>> eventResponse =
-                eventServiceFeignClient.getOneEventDetail(
-                        orderRequest.getEventId());
-        if (eventResponse.getStatusCode().isError()) {
-            throw new FeignServiceException(ErrorCode.EVENT_FEIGN_ERROR);
+            OrderRequest orderRequest, String memberId) {
+        // 회원 유효성 검사
+        ResponseEntity<CommonResponse<MemberResponse>> memberResponse;
+        try {
+            memberResponse = memberServiceFeignClient.getMember(memberId);
+        } catch (FeignClientException e) {
+            throw new FeignServiceException(ErrorCode.MEMBER_FEIGN_ERROR);
         }
+        MemberResponse member = memberResponse.getBody().getData();
 
+        // 공연 유효성 검사
+        ResponseEntity<CommonResponse<EventResponse>> eventResponse;
+        try {
+            eventResponse = eventServiceFeignClient.getOneEventDetail(orderRequest.getEventId());
+        } catch (FeignClientException e) {
+            throw new OrderException(ErrorCode.EVENT_FEIGN_ERROR);
+        }
         EventResponse event = Objects.requireNonNull(eventResponse.getBody()).getData();
         if (event == null) {
             log.error(eventResponse.getBody().getMessage());
-            throw new EventException(ErrorCode.EVENT_NOT_FOUND);
+            throw new OrderException(ErrorCode.EVENT_NOT_FOUND);
         }
         OrderEvent orderEvent = OrderEvent.convertEventResponseToOrderEvent(event);
 
-        // 좌석 유효성 검사 추가
+        // 좌석 유효성 검사
+        ResponseEntity<CommonResponse<List<SeatAreaResponse>>> seatResponses;
+        try {
+            seatResponses =
+                    eventServiceFeignClient.getEventSeats(
+                            orderRequest.getEventId(), orderRequest.getSeatIds(), false);
+        } catch (FeignClientException e) {
+            throw new OrderException(ErrorCode.SEAT_NOT_FOUND);
+        }
+        List<SeatAreaResponse> seats = seatResponses.getBody().getData();
+
+        // 좌석 예약 여부 검사
         List<Orders> existingOrderList = new ArrayList<>();
         for (String seatId : orderRequest.getSeatIds()) {
             List<Orders> existingOrder =
-                    orderRepository.findByEventDatetimeIdAndSeatId(
+                    orderRepository.findByEventDatetimeIdAndSeatIdWhereNotCanceled(
                             UUID.fromString(orderRequest.getEventDatetimeId()),
                             UUID.fromString(seatId));
             existingOrderList.addAll(existingOrder);
@@ -319,24 +302,42 @@ public class OrderService {
         order.addReservations(
                 orderRequest.getSeatIds().stream()
                         .map(
-                                seatId ->
-                                        new Reservation(
-                                                UUID.fromString(seatId),
-                                                UUID.fromString(orderRequest.getEventDatetimeId()),
-                                                order))
+                                seatId -> {
+                                    SeatAreaResponse seat =
+                                            seats.stream()
+                                                    .filter(s -> s.getId().equals(seatId))
+                                                    .findFirst()
+                                                    .orElseThrow(
+                                                            () ->
+                                                                    new OrderException(
+                                                                            ErrorCode
+                                                                                    .SEAT_NOT_FOUND));
+
+                                    return new Reservation(
+                                            UUID.fromString(seatId),
+                                            UUID.fromString(orderRequest.getEventDatetimeId()),
+                                            order,
+                                            seat.getArea().getLabel(),
+                                            seat.getRow(),
+                                            seat.getNumber());
+                                })
                         .toList());
 
         order.addPayments(List.of(Payment.toEntity(tossPaymentResponse, order)));
         Orders savedOrder = orderRepository.save(order);
 
         // 주문 확인용 응답 객체 생성
-        Optional<Instant> selectedEventDatetime = Optional.ofNullable(event.getEventDatetimes())
-                .orElse(Collections.emptyList())
-                .stream()
-                .filter(datetime ->
-                        datetime.getId() != null && datetime.getId().equals(orderRequest.getEventDatetimeId()))
-                .map(EventResponse.EventDatetimeResponse::getDatetime)
-                .findFirst();
+        Optional<Instant> selectedEventDatetime =
+                Optional.ofNullable(event.getEventDatetimes())
+                        .orElse(Collections.emptyList())
+                        .stream()
+                        .filter(
+                                datetime ->
+                                        datetime.getId() != null
+                                                && datetime.getId()
+                                                        .equals(orderRequest.getEventDatetimeId()))
+                        .map(EventResponse.EventDatetimeResponse::getDatetime)
+                        .findFirst();
 
         List<ReservationDetailResponse> reservationDetailList = new ArrayList<>();
         for (Reservation reservation : savedOrder.getReservations()) {

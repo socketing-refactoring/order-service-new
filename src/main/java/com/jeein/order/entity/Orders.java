@@ -15,20 +15,20 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @ToString(callSuper = true)
 public class Orders extends DeletableEntity {
-    @Column
-    private UUID eventId;
+    @Column private UUID eventId;
 
-    @Column
-    private String eventTitle;
+    @Column private String eventTitle;
 
-    @Column
-    private String eventThumbnail;
+    @Column private String eventThumbnail;
 
     @Column(nullable = false)
     private UUID memberId;
 
     @Column(nullable = false)
     private String memberName;
+
+    @Column(nullable = false)
+    private String memberNickname;
 
     @Column(nullable = false)
     private String memberEmail;
@@ -58,6 +58,7 @@ public class Orders extends DeletableEntity {
                 .eventThumbnail(event.getThumbnail())
                 .memberId(UUID.fromString(member.getId()))
                 .memberName(member.getName())
+                .memberNickname(member.getNickname())
                 .memberEmail(member.getEmail())
                 .build();
     }

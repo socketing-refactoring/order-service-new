@@ -21,6 +21,7 @@ public enum ErrorCode {
     EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E_002", "공연을 찾을 수 없습니다."),
     EVENT_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "E_003", "이미 삭제된 공연입니다."),
     EVENT_DATETIME_NOT_FOUND(HttpStatus.NOT_FOUND, "E_004", "공연 일정을 찾을 수 없습니다."),
+    SEAT_NOT_FOUND(HttpStatus.NOT_FOUND, "E_005", "좌석을 찾을 수 없습니다."),
 
     ORDER_ALREADY_EXISTS(HttpStatus.CONFLICT, "O_001", "이미 예약된 좌석입니다."),
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "O_002", "공연 정보를 찾을 수 없습니다."),

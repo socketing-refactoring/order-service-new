@@ -1,8 +1,6 @@
 package com.jeein.order.dto.response;
 
 import com.jeein.order.entity.Payment;
-import com.jeein.order.enums.TossPaymentMethod;
-import com.jeein.order.enums.TossPaymentStatus;
 import java.time.Instant;
 import lombok.*;
 
